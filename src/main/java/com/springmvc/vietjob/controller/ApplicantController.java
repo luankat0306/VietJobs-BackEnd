@@ -46,13 +46,14 @@ public class ApplicantController {
 	
 	@Autowired
 	UserHasRoleRepository userHasRoleRepository;
-	// List Applicants
+
+	// Danh sách người tìm việc
 	@GetMapping
 	public List<Applicant> getApplicants() {
 		return applicantRepository.findAll();
 	}
 	
-	// Create Applicant
+	// Đăng kí người tìm viêc
 	@PostMapping("/signup")
 	public  ResponseEntity<?> createApplicant(@RequestBody Applicant applicant) {
 		Set<Role> roles = new HashSet<>();
@@ -74,26 +75,28 @@ public class ApplicantController {
 				
 		roles.add(userRole);
 		/*
-		 * CREATE USER BEFORE CREATE APPLICANT
+		 * Tạo user trước
 		 */
 		User user = applicant.getUser();
 		user.setRoles(roles);
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
 		user.setImage("default.png");
 		
-		User createdUser = userRepository.save(user);	
+		User createdUser = userRepository.save(user);
 		applicant.setUser(createdUser);
 
 		return ResponseEntity.ok(applicantRepository.save(applicant));
 	}
 	
-	// Get Applicant
+	// Lấy người tìm việc
 	@GetMapping("/{id}")
 	public ResponseEntity<Applicant> getApplicant(@PathVariable Long id) {
  		Applicant applicant = applicantRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 		return ResponseEntity.ok(applicant);
 	}
+
+	// Lấy người tìm việc từ id user
 	@GetMapping("/users/{id}")
 	public ResponseEntity<Applicant> getApplicantByUserId(@PathVariable Long id) {
  		User user = userRepository.findById(id)
@@ -102,13 +105,14 @@ public class ApplicantController {
  		
 		return ResponseEntity.ok(applicant);
 	}
-	// Update Applicant
+
+	// Thay đổi thông tin người tìm việc
 	@PutMapping("/{id}")
 	public ResponseEntity<?> updateApplicant(@PathVariable Long id, @RequestBody Applicant applicantForm) {
-//		Find applicant by path id
+
 		Applicant applicant = applicantRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-//		set property applicantForm for the applicant above
+
 		applicant.setAddress(applicantForm.getAddress());
 		applicant.setBirthday(applicantForm.getBirthday());
 		applicant.setGender(applicantForm.getGender());
@@ -117,6 +121,8 @@ public class ApplicantController {
 		User userForm = applicantForm.getUser();
 		User user = userRepository.findById(userForm.getId())
 				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+		//Kiểm tra username đã tồn tại
 		if(!userForm.getUsername().equals(user.getUsername())) {
 			if (userRepository.existsByUsername(userForm.getUsername())) {
 				return ResponseEntity
@@ -125,6 +131,7 @@ public class ApplicantController {
 			}
 		}
 
+		//Kiểm tra email đã tồn tại
 		if(!userForm.getEmail().equals(user.getEmail())) {
 			if (userRepository.existsByEmail(userForm.getEmail())) {
 				return ResponseEntity
@@ -132,8 +139,7 @@ public class ApplicantController {
 						.body(new MessageResponse("Email đã tồn tại!"));
 			}
 		}
-		
-//		set property userForm for the user above
+
 		user.setEmail(userForm.getEmail());
 		user.setFullname(userForm.getFullname());
 		user.setPhone(userForm.getPhone());
@@ -146,7 +152,7 @@ public class ApplicantController {
 		return ResponseEntity.ok(updatedApplicant);
 	}
 	
-	// Delete Applicant
+	// Xóa người tìm việc
 	@DeleteMapping("/{id}")
 	public  ResponseEntity<String> deleteApplicant(@PathVariable Long id) {
 		Applicant applicant = applicantRepository.findById(id)
@@ -161,8 +167,7 @@ public class ApplicantController {
 		
 		return ResponseEntity.ok("Delete Success");
 	}
-	
-	//Count Applicant
+
 	@GetMapping("/count")
 	public long countApplicant() {
 		return applicantRepository.count();

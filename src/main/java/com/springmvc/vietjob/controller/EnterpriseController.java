@@ -45,20 +45,22 @@ public class EnterpriseController {
 	
 	@Autowired
 	UserHasRoleRepository userHasRoleRepository;
-	
+
+	//Danh sách nhà tuyển dụng
 	@GetMapping
 	public List<Enterprise> getEnterprises() {
 		return enterpriseRepository.findAll();
 	}
 	
-	// Get enterprise
+	// Lấy nhà tuyển dụng
 	@GetMapping("/{id}")
 	public ResponseEntity<Enterprise> getEnterprise(@PathVariable Long id) {
  		Enterprise enterprise = enterpriseRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 		return ResponseEntity.ok(enterprise);
 	}
-	
+
+	//Lấy nhà tuyển dụng từ id user
 	@GetMapping("/users/{id}")
 	public ResponseEntity<Enterprise> getEnterpriseByUser(@PathVariable Long id) {
 		User user = userRepository.findById(id)
@@ -69,17 +71,19 @@ public class EnterpriseController {
 		return ResponseEntity.ok(enterprise);
 	}
 	
-	// Create Enterprise
+	// Đăng kí nhà tuyển dụng
 	@PostMapping("/signup")
 	public  ResponseEntity<?> createEnterprise(@RequestBody Enterprise enterprise) {
 		Set<Role> roles = new HashSet<>();
-		
+
+		//Kiểm tra username đã tồn tại
 		if (userRepository.existsByUsername(enterprise.getUser().getUsername())) {
 			return ResponseEntity
 					.badRequest()
 					.body(new MessageResponse("Username đã tồn tại!"));
 		}
 
+		//Kiểm tra email đã tồn tại
 		if (userRepository.existsByEmail(enterprise.getUser().getEmail())) {
 			return ResponseEntity
 					.badRequest()
@@ -91,7 +95,7 @@ public class EnterpriseController {
 				
 		roles.add(userRole);
 		/*	
-		 * CREATE USER BEFORE CREATE ENTERPRISE
+		 * Tạo user trước
 		 */
 		User user = enterprise.getUser();
 		user.setRoles(roles);
@@ -104,23 +108,25 @@ public class EnterpriseController {
 		return ResponseEntity.ok(enterpriseRepository.save(enterprise));
 	}
 	
-	// Update Enterprise
+	//Thay đổi thông tin nhà tuyển dụng
 	@PutMapping("/{id}")
 	public ResponseEntity<?> updateEnterprise(@PathVariable Long id, @RequestBody Enterprise enterpriseForm) {
-//			Find enterprise by path id
+
+		//Set thuộc tính enterpriseForm vào enterprise
 		Enterprise enterprise = enterpriseRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-//			set enterprise applicantForm for the applicant above
+
 		enterprise.setAddress(enterpriseForm.getAddress());
 		enterprise.setContact(enterpriseForm.getContact());
 		enterprise.setDescription(enterpriseForm.getDescription());
 		enterprise.setWebsite(enterpriseForm.getWebsite());
 		enterprise.setName(enterpriseForm.getName());
-		
+
 		User userForm = enterpriseForm.getUser();
 		User user = userRepository.findById(userForm.getId())
 				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-		
+
+		//Kiểm tra username đã tồn tại
 		if(!userForm.getUsername().equals(user.getUsername())) {
 			if (userRepository.existsByUsername(userForm.getUsername())) {
 				return ResponseEntity
@@ -129,6 +135,7 @@ public class EnterpriseController {
 			}
 		}
 
+		//Kiểm tra email đã tồn tại
 		if(!userForm.getEmail().equals(user.getEmail())) {
 			if (userRepository.existsByEmail(userForm.getEmail())) {
 				return ResponseEntity
@@ -136,7 +143,7 @@ public class EnterpriseController {
 						.body(new MessageResponse("Email đã tồn tại!"));
 			}
 		}
-//			set property userForm for the user above
+
 		user.setEmail(userForm.getEmail());
 		user.setFullname(userForm.getFullname());
 		user.setPhone(userForm.getPhone());

@@ -49,7 +49,8 @@ public class AuthController {
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		String jwt = jwtUtils.generateJwtToken(authentication);
 		
-		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();		
+		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();	
+		
 		List<String> roles = userDetails.getAuthorities().stream()
 				.map(item -> item.getAuthority())
 				.collect(Collectors.toList());
@@ -60,59 +61,4 @@ public class AuthController {
 												 userDetails.getEmail(), 
 												 roles));
 	}
-
-//	@PostMapping("/signup")
-//	public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
-//		if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-//			return ResponseEntity
-//					.badRequest()
-//					.body(new MessageResponse("Username đã tồn tại"));
-//		}
-//
-//		if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-//			return ResponseEntity
-//					.badRequest()
-//					.body(new MessageResponse("Email đã tồn tại"));
-//		}
-//
-//		// Create new user's account
-//		User user = new User(signUpRequest.getUsername(), 
-//							 signUpRequest.getEmail(),
-//							 encoder.encode(signUpRequest.getPassword()));
-//
-//		Set<String> strRoles = signUpRequest.getRole();
-//		Set<Role> roles = new HashSet<>();
-//
-//		if (strRoles == null) {
-//			Role userRole = roleRepository.findByName(EnumRole.ROLE_USER)
-//					.orElseThrow(() -> new RuntimeException("Không tìm thấy Role"));
-//			roles.add(userRole);
-//		} else {
-//			strRoles.forEach(role -> {
-//				switch (role) {
-//				case "admin":
-//					Role adminRole = roleRepository.findByName(EnumRole.ROLE_ADMIN)
-//							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//					roles.add(adminRole);
-//
-//					break;
-//				case "enterprise":
-//					Role modRole = roleRepository.findByName(EnumRole.ROLE_ENTERPRISE)
-//							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//					roles.add(modRole);
-//
-//					break;
-//				default:
-//					Role userRole = roleRepository.findByName(EnumRole.ROLE_USER)
-//							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//					roles.add(userRole);
-//				}
-//			});
-//		}
-//
-//		user.setRoles(roles);
-//		userRepository.save(user);
-//
-//		return ResponseEntity.ok(new MessageResponse("Đăng kí thành công"));
-//	}
 }

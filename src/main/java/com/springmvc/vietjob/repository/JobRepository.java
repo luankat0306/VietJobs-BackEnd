@@ -3,6 +3,8 @@ package com.springmvc.vietjob.repository;
 import java.sql.Date;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,12 +12,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.springmvc.vietjob.model.Job;
+import com.springmvc.vietjob.model.Career;
 import com.springmvc.vietjob.model.Enterprise;
 
 @Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
 
+	Page<Job> findAll (Pageable pageable);
+	
 	List<Job> findAllByEnterprise(Enterprise enterprise, Sort sort);
+	
+	List<Job> findAllByCareer(Career career);
 	
 	// Count Job per month by year
 	@Query("SELECT COUNT(startDate) FROM Job WHERE Month(startDate) = :month AND Year(startDate) = :year")
@@ -32,6 +39,16 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 			+ "limit 5", nativeQuery = true)
 	List<Object> topFiveJob();
 	
+	@Query(value = "select *, count(tt.id_cong_viec) as ungviens from trangthaihoso tt\r\n"
+			+ "inner join congviec cv\r\n"
+			+ "on cv.id = tt.id_cong_viec\r\n"
+			+ "inner join congty ct\r\n"
+			+ "on ct.id = cv.id_cong_ty\r\n"
+			+ "group by tt.id_cong_viec\r\n"
+			+ "order by ungviens desc", 
+			countQuery = "select * from trangthaihoso group by id_cong_viec", nativeQuery = true)
+	Page<Job> findAllJobsPopular(Pageable pageable);
+	
 	@Query("SELECT startDate FROM Job group by year(startDate)")
 	List<Date> getYears();
 	
@@ -39,5 +56,5 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 			+ "WHERE CONCAT(j.title, ' ', j.enterprise.name) LIKE %?1%"
 			+ "AND j.career.name LIKE %?2%"
 			+ "AND j.province LIKE %?3%")
-	List<Job> searchJob(String keyword, String career, String province);
+	Page<Job> searchJob(String keyword, String career, String province, Pageable pageable);
 }

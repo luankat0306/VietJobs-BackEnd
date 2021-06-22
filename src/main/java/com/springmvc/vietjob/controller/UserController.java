@@ -61,13 +61,15 @@ public class UserController {
 				.orElseThrow(() -> new ResourceNotFoundException("Not Found"));
 		
 		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-		
+
+		//Kiểm tra username đã tồn tại
 		if(!encoder.matches(emailForm.getConfirmPassword(), user.getPassword())) {
 			return ResponseEntity
 					.badRequest()
 					.body(new MessageResponse("Mật khẩu hiện tại không đúng"));
 		}
-		
+
+		//Kiểm tra email đã tồn tại
 		if (userRepository.existsByEmail(emailForm.getEmail()) && 
 				user.getEmail().equals(emailForm.getEmail())) {
 			
