@@ -14,8 +14,8 @@ public class MyConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                .allowedMethods("GET", "POST", "PUT", "DELETE")
-                .allowedOrigins("http://vietjobreactjs.herokuapp.com");
+                        .allowedMethods("GET", "POST", "PUT", "DELETE")
+                        .allowedOrigins("http://localhost:3000");
             }
         };
     }

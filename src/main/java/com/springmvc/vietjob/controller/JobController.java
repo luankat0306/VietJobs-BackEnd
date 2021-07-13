@@ -1,12 +1,14 @@
 package com.springmvc.vietjob.controller;
 
-import java.sql.Date;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.springmvc.vietjob.exception.ResourceNotFoundException;
+import com.springmvc.vietjob.model.Career;
+import com.springmvc.vietjob.model.Enterprise;
+import com.springmvc.vietjob.model.Job;
+import com.springmvc.vietjob.payload.response.MessageResponse;
+import com.springmvc.vietjob.repository.CandidateRepository;
+import com.springmvc.vietjob.repository.CareerRepository;
+import com.springmvc.vietjob.repository.EnterpriseRepository;
+import com.springmvc.vietjob.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,188 +16,177 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.springmvc.vietjob.exception.ResourceNotFoundException;
-import com.springmvc.vietjob.model.Job;
-import com.springmvc.vietjob.payload.response.MessageResponse;
-import com.springmvc.vietjob.model.Career;
-import com.springmvc.vietjob.model.Enterprise;
-import com.springmvc.vietjob.repository.JobRepository;
-import com.springmvc.vietjob.repository.CandidateRepository;
-import com.springmvc.vietjob.repository.CareerRepository;
-import com.springmvc.vietjob.repository.EnterpriseRepository;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jobs")
 public class JobController {
 
-	@Autowired
-	JobRepository JobRepository;
+    @Autowired
+    JobRepository JobRepository;
 
-	@Autowired
-	EnterpriseRepository enterpriseRepository;
+    @Autowired
+    EnterpriseRepository enterpriseRepository;
 
-	@Autowired
-	CandidateRepository candidateRepository;
-	
-	@Autowired
-	CareerRepository careerRepository;
+    @Autowired
+    CandidateRepository candidateRepository;
 
-	// List Jobs
-	@GetMapping
-	public ResponseEntity<Map<String, Object>> getJobs(@RequestParam("page") int page, @RequestParam("rowPerPage") int rowPerPage) {
-		Pageable pageable = PageRequest.of(page, rowPerPage);
-		
-		Page<Job> pageJobs = JobRepository.findAll(pageable);
-		
-		Map<String, Object> res = new HashMap<String, Object>();
-		res.put("jobs", pageJobs.getContent());
-		res.put("count", pageJobs.getTotalPages());
-		
-		return new ResponseEntity<Map<String,Object>>(res, HttpStatus.OK);
-	}
+    @Autowired
+    CareerRepository careerRepository;
 
-	@GetMapping("/popular")
-	public ResponseEntity<Map<String, Object>> getJobsPopular(@RequestParam("page") int page,
-			@RequestParam("rowPerPage") int rowPerPage) {
-		Pageable pageable = PageRequest.of(page, rowPerPage);
+    // List Jobs
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getJobs(@RequestParam("page") int page, @RequestParam("rowPerPage") int rowPerPage) {
+        Pageable pageable = PageRequest.of(page, rowPerPage);
 
-		Page<Job> pageJobs = JobRepository.findAllJobsPopular(pageable);
-		Map<String, Object> res = new HashMap<String, Object>();
-		res.put("jobs", pageJobs.getContent());
-		res.put("count", pageJobs.getTotalPages());
-		return new ResponseEntity<Map<String, Object>>(res, HttpStatus.OK);
-	}
+        Page<Job> pageJobs = JobRepository.findAll(pageable);
 
-	// List Jobs Of Enterprise
-	@GetMapping("/enterprises/{id}")
-	public List<Job> getJobsOfEnterprise(@PathVariable Long id) {
-		Enterprise nhaTuyenDung = enterpriseRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy"));
-		return JobRepository.findAllByEnterprise(nhaTuyenDung, Sort.by("startDate").descending());
-	}
-	
-	// List Jobs Of Career
-	@GetMapping("/career/{id}")
-	public List<Job> getJobsOfCareer(@PathVariable Long id) {
-		Career career = careerRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy"));
-		
-		return JobRepository.findAllByCareer(career);
-	}
+        Map<String, Object> res = new HashMap<>();
+        res.put("jobs", pageJobs.getContent());
+        res.put("count", pageJobs.getTotalPages());
 
-	@GetMapping("/search")
-	public ResponseEntity<?> searchJob(@RequestParam("keyword") String keyword, @RequestParam("career") String career,
-			@RequestParam("province") String province, @RequestParam("page") int page, @RequestParam("rowPerPage") int rowPerPage) {
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
 
-		Pageable pageable = PageRequest.of(page, rowPerPage);
-		
-		Page<Job> pageJobs = JobRepository.searchJob(keyword, career, province, pageable);
-		
-		if (pageJobs.getSize() == 0) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Không tìm thấy"));
-		}
-		
-		Map<String, Object> res = new HashMap<String, Object>();
-		res.put("jobs", pageJobs.getContent());
-		res.put("count", pageJobs.getTotalPages());
-		
-		return new ResponseEntity<Map<String,Object>>(res, HttpStatus.OK);
-	}
+    @GetMapping("/popular")
+    public ResponseEntity<Map<String, Object>> getJobsPopular(@RequestParam("page") int page,
+                                                              @RequestParam("rowPerPage") int rowPerPage) {
+        Pageable pageable = PageRequest.of(page, rowPerPage);
 
-	@PostMapping
-	public ResponseEntity<?> createJob(@RequestBody Job congViec) {
-		LocalDate dateNow = LocalDate.now();
+        Page<Job> pageJobs = JobRepository.findAllJobsPopular(pageable);
+        Map<String, Object> res = new HashMap<>();
+        res.put("jobs", pageJobs.getContent());
+        res.put("count", pageJobs.getTotalPages());
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
 
-		Date date = java.sql.Date.valueOf(dateNow);
+    // List Jobs Of Enterprise
+    @GetMapping("/enterprises/{id}")
+    public List<Job> getJobsOfEnterprise(@PathVariable Long id) {
+        Enterprise nhaTuyenDung = enterpriseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy"));
+        return JobRepository.findAllByEnterprise(nhaTuyenDung, Sort.by("startDate").descending());
+    }
 
-		if (congViec.getEndDate().before(date)) {
-			return ResponseEntity.badRequest().body(new MessageResponse("Hạn nộp phải sau ngày hiện tại"));
-		}
+    // List Jobs Of Career
+    @GetMapping("/{jobId}/career/{careerId}")
+    public List<Job> getJobsOfCareer(@PathVariable Long jobId, @PathVariable Long careerId) {
+        Career career = careerRepository.findById(careerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy"));
 
-		congViec.setStartDate(date);
-		return ResponseEntity.ok(JobRepository.save(congViec));
-	}
+        return JobRepository.findAllByCareerAndIdNot(career, jobId);
+    }
 
-	@GetMapping("/{id}")
-	public ResponseEntity<Job> getJob(@PathVariable Long id) {
-		Job congViec = JobRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy id= " + id));
-		return ResponseEntity.ok(congViec);
-	}
+    @GetMapping("/search")
+    public ResponseEntity<?> searchJob(@RequestParam("keyword") String keyword, @RequestParam("career") String career,
+                                       @RequestParam("province") String province, @RequestParam("page") int page, @RequestParam("rowPerPage") int rowPerPage) {
 
-	@PutMapping("/{id}")
-	public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job congViecForm) {
-		Job congViec = JobRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy id= " + id));
+        Pageable pageable = PageRequest.of(page, rowPerPage);
 
-		congViecForm.setId(congViec.getId());
+        Page<Job> pageJobs = JobRepository.searchJob(keyword, career, province, pageable);
 
-		Job updatedCongViec = JobRepository.save(congViecForm);
-		return ResponseEntity.ok(updatedCongViec);
-	}
+        if (pageJobs.getTotalElements() == 0) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Không tìm thấy"));
+        }
 
-	@DeleteMapping("/{id}")
-	public String deleteJob(@PathVariable Long id) {
-		Job job = JobRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy id= " + id));
+        Map<String, Object> res = new HashMap<>();
+        res.put("jobs", pageJobs.getContent());
+        res.put("count", pageJobs.getTotalPages());
 
-		candidateRepository.deleteAllByJob(job);
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
 
-		JobRepository.deleteById(id);
-		return "Delete Success";
-	}
+    @PostMapping
+    public ResponseEntity<?> createJob(@RequestBody Job congViec) {
+        LocalDate dateNow = LocalDate.now();
 
-	@GetMapping("/count")
-	public long countJob() {
-		return JobRepository.count();
-	}
+        Date date = java.sql.Date.valueOf(dateNow);
 
-	@GetMapping("/list-count-monthly/{year}")
-	public List<Long> countJobWithMonth(@PathVariable int year) {
-		List<Long> dataList = new ArrayList<Long>();
-		LocalDate dateNow = LocalDate.now();
-		int monthInt;
+        if (congViec.getEndDate().before(date)) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Hạn nộp phải sau ngày hiện tại"));
+        }
 
-		// Year Present
-		if (year == dateNow.getYear()) {
-			monthInt = dateNow.getMonthValue();
-		}
-		// Less Year Present
-		else {
-			monthInt = 12;
-		}
+        congViec.setStartDate(date);
+        return ResponseEntity.ok(JobRepository.save(congViec));
+    }
 
-		for (int i = 1; i <= monthInt; i++) {
-			dataList.add(JobRepository.countJobByMonthAndYear(i, year));
-		}
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> getJob(@PathVariable Long id) {
+        Job congViec = JobRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy id= " + id));
+        return ResponseEntity.ok(congViec);
+    }
 
-		return dataList;
-	}
+    @PutMapping("/{id}")
+    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job congViecForm) {
+        Job congViec = JobRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy id= " + id));
 
-	@GetMapping("/list-year")
-	public List<Date> getYearly() {
-		List<Date> years = new ArrayList<Date>();
-		Date dateNow = new Date(System.currentTimeMillis());
+        congViecForm.setId(congViec.getId());
 
-		years.add(dateNow);
-		years.addAll(JobRepository.getYears());
+        Job updatedCongViec = JobRepository.save(congViecForm);
+        return ResponseEntity.ok(updatedCongViec);
+    }
 
-		return years;
-	}
+    @DeleteMapping("/{id}")
+    public String deleteJob(@PathVariable Long id) {
+        Job job = JobRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy id= " + id));
 
-	@GetMapping("/chart/top-five-jobs")
-	public List<Object> topFiveJob() {
-		return JobRepository.topFiveJob();
-	}
+        candidateRepository.deleteAllByJob(job);
+
+        JobRepository.deleteById(id);
+        return "Delete Success";
+    }
+
+    @GetMapping("/count")
+    public long countJob() {
+        return JobRepository.count();
+    }
+
+    @GetMapping("/list-count-monthly/{year}")
+    public List<Long> countJobWithMonth(@PathVariable int year) {
+        List<Long> dataList = new ArrayList<>();
+        LocalDate dateNow = LocalDate.now();
+        int monthInt;
+
+        // Year Present
+        if (year == dateNow.getYear()) {
+            monthInt = dateNow.getMonthValue();
+        }
+        // Less Year Present
+        else {
+            monthInt = 12;
+        }
+
+        for (int i = 1; i <= monthInt; i++) {
+            dataList.add(JobRepository.countJobByMonthAndYear(i, year));
+        }
+
+        return dataList;
+    }
+
+    @GetMapping("/list-year")
+    public List<Date> getYearly() {
+        List<Date> years = new ArrayList<>();
+        Date dateNow = new Date(System.currentTimeMillis());
+
+        years.add(dateNow);
+        years.addAll(JobRepository.getYears());
+
+        return years;
+    }
+
+    @GetMapping("/chart/top-five-jobs")
+    public List<Object> topFiveJob() {
+        return JobRepository.topFiveJob();
+    }
 
 }

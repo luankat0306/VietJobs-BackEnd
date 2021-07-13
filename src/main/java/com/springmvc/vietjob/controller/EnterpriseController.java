@@ -1,203 +1,154 @@
 package com.springmvc.vietjob.controller;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.springmvc.vietjob.exception.ResourceNotFoundException;
 import com.springmvc.vietjob.model.Enterprise;
-import com.springmvc.vietjob.model.EnumRole;
-import com.springmvc.vietjob.model.Role;
 import com.springmvc.vietjob.model.User;
 import com.springmvc.vietjob.payload.response.MessageResponse;
 import com.springmvc.vietjob.repository.EnterpriseRepository;
 import com.springmvc.vietjob.repository.RoleRepository;
 import com.springmvc.vietjob.repository.UserHasRoleRepository;
 import com.springmvc.vietjob.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/enterprises")
 public class EnterpriseController {
-	
-	@Autowired
-	EnterpriseRepository enterpriseRepository;
-	
-	@Autowired
-	UserRepository userRepository;
-	
-	@Autowired
-	RoleRepository roleRepository;
-	
-	@Autowired
-	PasswordEncoder passwordEncoder;
-	
-	@Autowired
-	UserHasRoleRepository userHasRoleRepository;
 
-	//Danh sách nhà tuyển dụng
-	@GetMapping
-	public List<Enterprise> getEnterprises() {
-		return enterpriseRepository.findAll();
-	}
-	
-	// Lấy nhà tuyển dụng
-	@GetMapping("/{id}")
-	public ResponseEntity<Enterprise> getEnterprise(@PathVariable Long id) {
- 		Enterprise enterprise = enterpriseRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-		return ResponseEntity.ok(enterprise);
-	}
+    @Autowired
+    EnterpriseRepository enterpriseRepository;
 
-	//Lấy nhà tuyển dụng từ id user
-	@GetMapping("/users/{id}")
-	public ResponseEntity<Enterprise> getEnterpriseByUser(@PathVariable Long id) {
-		User user = userRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-		
- 		Enterprise enterprise = enterpriseRepository.findByUser(user);
-				
-		return ResponseEntity.ok(enterprise);
-	}
-	
-	// Đăng kí nhà tuyển dụng
-	@PostMapping("/signup")
-	public  ResponseEntity<?> createEnterprise(@RequestBody Enterprise enterprise) {
-		Set<Role> roles = new HashSet<>();
+    @Autowired
+    UserRepository userRepository;
 
-		//Kiểm tra username đã tồn tại
-		if (userRepository.existsByUsername(enterprise.getUser().getUsername())) {
-			return ResponseEntity
-					.badRequest()
-					.body(new MessageResponse("Username đã tồn tại!"));
-		}
+    @Autowired
+    RoleRepository roleRepository;
 
-		//Kiểm tra email đã tồn tại
-		if (userRepository.existsByEmail(enterprise.getUser().getEmail())) {
-			return ResponseEntity
-					.badRequest()
-					.body(new MessageResponse("Email đã tồn tại!"));
-		}
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
-		Role userRole = roleRepository.findByName(EnumRole.ROLE_ENTERPRISE)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy Role"));
-				
-		roles.add(userRole);
-		/*	
-		 * Tạo user trước
-		 */
-		User user = enterprise.getUser();
-		user.setRoles(roles);
-		user.setPassword(passwordEncoder.encode(user.getPassword()));
-		user.setImage("default.png");
-		
-		User createdUser = userRepository.save(user);	
-		enterprise.setUser(createdUser);
+    @Autowired
+    UserHasRoleRepository userHasRoleRepository;
 
-		return ResponseEntity.ok(enterpriseRepository.save(enterprise));
-	}
-	
-	//Thay đổi thông tin nhà tuyển dụng
-	@PutMapping("/{id}")
-	public ResponseEntity<?> updateEnterprise(@PathVariable Long id, @RequestBody Enterprise enterpriseForm) {
+    //Danh sách nhà tuyển dụng
+    @GetMapping
+    public List<Enterprise> getEnterprises() {
+        return enterpriseRepository.findAll();
+    }
 
-		//Set thuộc tính enterpriseForm vào enterprise
-		Enterprise enterprise = enterpriseRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+    // Lấy nhà tuyển dụng
+    @GetMapping("/{id}")
+    public ResponseEntity<Enterprise> getEnterprise(@PathVariable Long id) {
+        Enterprise enterprise = enterpriseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+        return ResponseEntity.ok(enterprise);
+    }
 
-		enterprise.setAddress(enterpriseForm.getAddress());
-		enterprise.setContact(enterpriseForm.getContact());
-		enterprise.setDescription(enterpriseForm.getDescription());
-		enterprise.setWebsite(enterpriseForm.getWebsite());
-		enterprise.setName(enterpriseForm.getName());
+    //Lấy nhà tuyển dụng từ id user
+    @GetMapping("/users/{id}")
+    public ResponseEntity<Enterprise> getEnterpriseByUser(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 
-		User userForm = enterpriseForm.getUser();
-		User user = userRepository.findById(userForm.getId())
-				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+        Enterprise enterprise = enterpriseRepository.findByUser(user);
 
-		//Kiểm tra username đã tồn tại
-		if(!userForm.getUsername().equals(user.getUsername())) {
-			if (userRepository.existsByUsername(userForm.getUsername())) {
-				return ResponseEntity
-						.badRequest()
-						.body(new MessageResponse("Username đã tồn tại!"));
-			}
-		}
+        return ResponseEntity.ok(enterprise);
+    }
 
-		//Kiểm tra email đã tồn tại
-		if(!userForm.getEmail().equals(user.getEmail())) {
-			if (userRepository.existsByEmail(userForm.getEmail())) {
-				return ResponseEntity
-						.badRequest()
-						.body(new MessageResponse("Email đã tồn tại!"));
-			}
-		}
+    //Thay đổi thông tin nhà tuyển dụng
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateEnterprise(@PathVariable Long id, @RequestBody Enterprise enterpriseForm) {
 
-		user.setEmail(userForm.getEmail());
-		user.setFullname(userForm.getFullname());
-		user.setPhone(userForm.getPhone());
-		user.setUsername(userForm.getUsername());
-		
-		User createdUser = userRepository.save(user);
-		enterprise.setUser(createdUser);
-		
-		Enterprise updatedEnterprise = enterpriseRepository.save(enterprise);
-		return ResponseEntity.ok(updatedEnterprise);
-	}
-	
-	// Delete Applicant
-	@DeleteMapping("/{id}")
-	public  ResponseEntity<?> deleteApplicant(@PathVariable Long id) {
-		try {
-			Enterprise enterprise = enterpriseRepository.findById(id)
-					.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-				userHasRoleRepository.deleteByRoles(enterprise.getUser().getId());
-				
-				enterpriseRepository.deleteById(id);
-				
-				userRepository.deleteById(enterprise.getUser().getId());
-					
-				return ResponseEntity.ok("Delete Success");
-		} catch (Exception e) {
-			return ResponseEntity.badRequest()
-					.body(new MessageResponse("Không thể xóa công ty này"));
-		}
-		
-	}
-	
-	@GetMapping("/count")
-	public long countEnterprise() {
-		return enterpriseRepository.count();
-	}
-	
-	@GetMapping("/chart/top-five-enterprises")
-	public List<Object> topFiveEnterprise() {
-		return enterpriseRepository.topFiveEnterprise();
-	}
-	
-	@PostMapping("/change-description/{id}")
-	public ResponseEntity<?> changeDescription(@PathVariable Long id, @RequestBody Enterprise enterpriseForm) {
-		Enterprise enterprise = enterpriseRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-		
-		enterprise.setDescription(enterpriseForm.getDescription());
-		
-		return ResponseEntity.ok(enterpriseRepository.save(enterprise));
-	}
-	
-	@GetMapping("/search/{keyword}")
-	public List<Enterprise> search(@PathVariable String keyword) {
-		return enterpriseRepository.search(keyword);
-	}
+        //Set thuộc tính enterpriseForm vào enterprise
+        Enterprise enterprise = enterpriseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        enterprise.setAddress(enterpriseForm.getAddress());
+        enterprise.setContact(enterpriseForm.getContact());
+        enterprise.setDescription(enterpriseForm.getDescription());
+        enterprise.setWebsite(enterpriseForm.getWebsite());
+        enterprise.setName(enterpriseForm.getName());
+
+        User userForm = enterpriseForm.getUser();
+        User user = userRepository.findById(userForm.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        //Kiểm tra username đã tồn tại
+        if (!userForm.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(userForm.getUsername())) {
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Username đã tồn tại!"));
+            }
+        }
+
+        //Kiểm tra email đã tồn tại
+        if (!userForm.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(userForm.getEmail())) {
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Email đã tồn tại!"));
+            }
+        }
+
+        user.setEmail(userForm.getEmail());
+        user.setFullname(userForm.getFullname());
+        user.setPhone(userForm.getPhone());
+        user.setUsername(userForm.getUsername());
+
+        User createdUser = userRepository.save(user);
+        enterprise.setUser(createdUser);
+
+        Enterprise updatedEnterprise = enterpriseRepository.save(enterprise);
+        return ResponseEntity.ok(updatedEnterprise);
+    }
+
+    // Delete Applicant
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteApplicant(@PathVariable Long id) {
+        try {
+            Enterprise enterprise = enterpriseRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+            userHasRoleRepository.deleteByRoles(enterprise.getUser().getId());
+
+            enterpriseRepository.deleteById(id);
+
+            userRepository.deleteById(enterprise.getUser().getId());
+
+            return ResponseEntity.ok("Delete Success");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Không thể xóa công ty này"));
+        }
+
+    }
+
+    @GetMapping("/count")
+    public long countEnterprise() {
+        return enterpriseRepository.count();
+    }
+
+    @GetMapping("/chart/top-five-enterprises")
+    public List<Object> topFiveEnterprise() {
+        return enterpriseRepository.topFiveEnterprise();
+    }
+
+    @PostMapping("/change-description/{id}")
+    public ResponseEntity<?> changeDescription(@PathVariable Long id, @RequestBody Enterprise enterpriseForm) {
+        Enterprise enterprise = enterpriseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        enterprise.setDescription(enterpriseForm.getDescription());
+
+        return ResponseEntity.ok(enterpriseRepository.save(enterprise));
+    }
+
+    @GetMapping("/search/{keyword}")
+    public List<Enterprise> search(@PathVariable String keyword) {
+        return enterpriseRepository.search(keyword);
+    }
 }
