@@ -38,14 +38,14 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             + "limit 5", nativeQuery = true)
     List<Object> topFiveJob();
 
-    @Query(value = "select *, count(tt.id_cong_viec) as ungviens from congviec cv \r\n"
-            + "inner join trangthaihoso tt \r\n"
+    @Query(value = "select *, count(tt.id_cong_viec) as ungviens from vietjobs.congviec cv \r\n"
+            + "inner join vietjobs.trangthaihoso tt \r\n"
             + "on cv.id = tt.id_cong_viec\r\n"
-            + "inner join congty ct\r\n"
+            + "inner join vietjobs.congty ct\r\n"
             + "on ct.id = cv.id_cong_ty\r\n"
-            + "group by tt.id_cong_viec\r\n"
-            + "order by ungviens desc",
-            countQuery = "select * from trangthaihoso group by id_cong_viec", nativeQuery = true)
+            + "group by cv.id\r\n"
+            + "order by ungviens desc;",
+             nativeQuery = true)
     Page<Job> findAllJobsPopular(Pageable pageable);
 
     @Query("SELECT startDate FROM Job group by FUNCTION('YEAR',startDate)")

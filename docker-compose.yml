@@ -1,0 +1,27 @@
+version: "3"
+services:
+  vjmysql:
+    image: mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=vietjobs
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./vietjobsdb:/docker-entrypoint-initdb.d
+  api:
+    image: vietjobs-api:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - vjmysql
+  # webapp:
+  #   image: vietjobs-reactapp:latest
+  #   restart: always
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - api
+volumes:
+  mysql-data:
